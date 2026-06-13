@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isGroupMember(groupId) {
+      return signedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+    }
+
+    // User profiles: anyone signed in can read (needed to show nicknames/avatars
+    // of group members and friends); only the owner can write.
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == uid;
+
+      // Private friends list.
+      match /friends/{friendUid} {
+        allow read, write: if signedIn() && request.auth.uid == uid;
+      }
+    }
+
+    // Phone → uid lookup. Create-only, and only for your own uid.
+    match /phoneIndex/{phone} {
+      allow get: if signedIn();
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid;
+    }
+
+    match /groups/{groupId} {
+      // get-by-code is how joining works: the code itself is the secret.
+      allow get: if signedIn();
+      // Listing groups is restricted to your own memberships.
+      allow list: if signedIn() && request.auth.uid in resource.data.memberIds;
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid];
+      // Members can update the group; non-members may only add themselves (join).
+      allow update: if signedIn()
+        && (
+          request.auth.uid in resource.data.memberIds
+          || request.resource.data.memberIds == resource.data.memberIds.concat([request.auth.uid])
+        );
+
+      match /records/{recordId} {
+        allow read, write: if isGroupMember(groupId);
+      }
+
+      match /activity/{entryId} {
+        allow read, create: if isGroupMember(groupId);
+      }
+    }
+  }
+}

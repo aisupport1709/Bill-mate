@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { listenGroup } from '../../api/groups';
 import { deleteRecord, listenRecords } from '../../api/records';
 import { Avatar } from '../../components/Avatar';
@@ -28,17 +28,15 @@ export function GroupDetailScreen({ route, navigation }: Props) {
   useEffect(() => listenGroup(groupId, setGroup), [groupId]);
   useEffect(() => listenRecords(groupId, setRecords), [groupId]);
 
+  const adminIds: string[] = group?.adminIds ?? (group ? [group.createdBy] : []);
+  const isAdmin = adminIds.includes(profile.uid);
+
   useEffect(() => {
     navigation.setOptions({
       title: group ? `${group.emoji} ${group.name}` : '',
-      headerLeft: Platform.OS === 'web' ? () => (
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: colors.primary }]}>‹ Back</Text>
-        </TouchableOpacity>
-      ) : undefined,
       headerRight: () => (
-        <TouchableOpacity style={[styles.inviteBtn, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate('GroupInfo', { groupId })}>
-          <Text style={styles.inviteBtnText}>{t.invitePlus}</Text>
+        <TouchableOpacity style={[styles.inviteBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => navigation.navigate('GroupInfo', { groupId })}>
+          <Text style={[styles.inviteBtnText, { color: colors.text }]}>👥 {t.invitePlus}</Text>
         </TouchableOpacity>
       ),
     });
@@ -197,6 +195,11 @@ export function GroupDetailScreen({ route, navigation }: Props) {
         <TouchableOpacity style={[styles.toolBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => navigation.navigate('Activity', { groupId })}>
           <Text style={[styles.toolText, { color: colors.text }]}>{t.activity}</Text>
         </TouchableOpacity>
+        {isAdmin && (
+          <TouchableOpacity style={[styles.toolBtn, { backgroundColor: colors.primary + '18', borderColor: colors.primary }]} onPress={() => navigation.navigate('GroupInfo', { groupId })}>
+            <Text style={[styles.toolText, { color: colors.primary }]}>{t.manageGroup}</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.list}>
@@ -214,10 +217,8 @@ export function GroupDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  backBtn: { paddingRight: 8, paddingVertical: 4 },
-  backText: { fontSize: 17, fontWeight: '600' },
-  inviteBtn: { borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 },
-  inviteBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  inviteBtn: { borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1 },
+  inviteBtnText: { fontSize: 14, fontWeight: '700' },
   balanceStrip: { flexGrow: 0, borderBottomWidth: 1 },
   balanceContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 10 },
   balanceChip: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 },

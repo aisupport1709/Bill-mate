@@ -62,6 +62,7 @@ function WebBackButton({ onPress, color }: { onPress: () => void; color: string 
   );
 }
 
+
 function Tabs() {
   const colors = useColors();
   const t = useT();
@@ -101,13 +102,17 @@ export function RootNavigator() {
     );
   }
 
-  const stackScreenOptions = {
+  const primaryColor = colors.primary;
+  const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
     headerBackButtonDisplayMode: 'minimal' as const,
     headerTitleStyle: { fontWeight: '700' as const, color: colors.text },
     headerStyle: { backgroundColor: colors.card },
     headerShadowVisible: false,
-    headerTintColor: colors.primary,
-  };
+    headerTintColor: primaryColor,
+    ...(Platform.OS === 'web' && navigation.canGoBack() ? {
+      headerLeft: () => <WebBackButton onPress={() => navigation.goBack()} color={primaryColor} />,
+    } : {}),
+  });
 
   return (
     <NavigationContainer linking={linking} theme={navTheme}>

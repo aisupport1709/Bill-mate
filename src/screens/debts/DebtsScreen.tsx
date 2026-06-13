@@ -12,6 +12,7 @@ import { formatDate, formatDateTime, formatK } from '../../lib/format';
 import { notifyUsers } from '../../lib/push';
 
 type Tab = 'iOwe' | 'owedToMe' | 'history';
+type GroupBy = 'friend' | 'group';
 
 export function DebtsScreen() {
   const profile = useProfile();
@@ -19,10 +20,12 @@ export function DebtsScreen() {
   const t = useT();
   const { items, loading } = useAllDebts();
   const [tab, setTab] = useState<Tab>('iOwe');
+  const [view, setView] = useState<GroupBy>('friend');
 
   const iOwe = items.filter((i) => i.debtorId === profile.uid && !i.paid);
   const owedToMe = items.filter((i) => i.creditorId === profile.uid && !i.paid);
-  const history = items.filter((i) => i.paid && (i.debtorId === profile.uid || i.creditorId === profile.uid))
+  const history = items
+    .filter((i) => i.paid && (i.debtorId === profile.uid || i.creditorId === profile.uid))
     .sort((a, b) => (b.paidAt ?? 0) - (a.paidAt ?? 0));
 
   const everyone = useMemo(() => {
@@ -44,32 +47,56 @@ export function DebtsScreen() {
     ]);
   };
 
-  const confirmMarkAllPaid = (creditorId: string, group: DebtItem[], total: number) => {
-    showAlert(t.markAllPaid, t.markAllPaidMsg(formatK(total), displayName(profiles, creditorId, profile.uid), group.length), [
+  const confirmMarkAllPaid = (creditorId: string, groupItems: DebtItem[], total: number) => {
+    showAlert(t.markAllPaid, t.markAllPaidMsg(formatK(total), displayName(profiles, creditorId, profile.uid), groupItems.length), [
       { text: t.cancel, style: 'cancel' },
       { text: t.iPaidAll, onPress: async () => {
-        for (const item of group) await markPaid(item, false);
-        notifyUsers([creditorId], 'Bill Mate', `${profile.nickname} marked ${formatK(total)} (${group.length} items) as paid to you`);
+        for (const item of groupItems) await markPaid(item, false);
+        notifyUsers([creditorId], 'Bill Mate', `${profile.nickname} marked ${formatK(total)} (${groupItems.length} items) as paid to you`);
       }},
     ]);
   };
 
-  const groupBy = (list: DebtItem[], by: (i: DebtItem) => string) => {
+  // Group by friend (creditor or debtor uid)
+  const groupByFriend = (list: DebtItem[], keyFn: (i: DebtItem) => string) => {
     const map = new Map<string, DebtItem[]>();
     for (const item of list) {
-      const key = by(item);
+      const key = keyFn(item);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(item);
     }
-    return [...map.entries()].map(([uid, groupItems]) => ({
-      uid, items: groupItems, total: groupItems.reduce((s, i) => s + i.amountK, 0),
-    })).sort((a, b) => b.total - a.total);
+    return [...map.entries()]
+      .map(([uid, groupItems]) => ({ uid, items: groupItems, total: groupItems.reduce((s, i) => s + i.amountK, 0) }))
+      .sort((a, b) => b.total - a.total);
   };
 
-  const renderItemRow = (item: DebtItem, action?: () => void) => (
+  // Group by group id
+  const groupByGroup = (list: DebtItem[]) => {
+    const map = new Map<string, DebtItem[]>();
+    for (const item of list) {
+      const key = item.group.id;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    }
+    return [...map.entries()]
+      .map(([, groupItems]) => ({ group: groupItems[0].group, items: groupItems, total: groupItems.reduce((s, i) => s + i.amountK, 0) }))
+      .sort((a, b) => b.total - a.total);
+  };
+
+  const renderItemRow = (item: DebtItem, action?: () => void, showFriend?: boolean) => (
     <View key={`${item.record.id}-${item.debtorId}`} style={[styles.itemRow, { borderColor: colors.border }]}>
       <View style={styles.itemBody}>
-        <Text style={[styles.itemTitle, { color: colors.text }]}>{item.group.emoji} {item.group.name}{item.record.note ? ` · ${item.record.note}` : ''}</Text>
+        {showFriend && (
+          <View style={styles.itemFriendRow}>
+            <Avatar avatarId={profiles.get(tab === 'iOwe' ? item.creditorId : item.debtorId)?.avatarId} size={18} />
+            <Text style={[styles.itemFriend, { color: colors.textSecondary }]}>
+              {displayName(profiles, tab === 'iOwe' ? item.creditorId : item.debtorId, profile.uid)}
+            </Text>
+          </View>
+        )}
+        <Text style={[styles.itemTitle, { color: colors.text }]}>
+          {!showFriend ? `${item.group.emoji} ${item.group.name}` : ''}{item.record.note ? (showFriend ? item.record.note : ` · ${item.record.note}`) : ''}
+        </Text>
         <Text style={[styles.itemMeta, { color: colors.textSecondary }]}>{formatDate(item.record.date)}</Text>
       </View>
       <Text style={[styles.itemAmount, { color: colors.text }]}>{formatK(item.amountK)}</Text>
@@ -81,10 +108,14 @@ export function DebtsScreen() {
     </View>
   );
 
-  const TABS: [Tab, string][] = [[`iOwe`, t.iOwe], ['owedToMe', t.owedToMe], ['history', t.history]];
+  const TABS: [Tab, string][] = [['iOwe', t.iOwe], ['owedToMe', t.owedToMe], ['history', t.history]];
+
+  const showViewToggle = tab !== 'history';
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      {/* Main tabs */}
       <View style={[styles.tabs, { backgroundColor: colors.segmentBg }]}>
         {TABS.map(([key, label]) => (
           <TouchableOpacity key={key} style={[styles.tab, tab === key && [styles.tabActive, { backgroundColor: colors.card }]]} onPress={() => setTab(key)}>
@@ -93,11 +124,32 @@ export function DebtsScreen() {
         ))}
       </View>
 
+      {/* View toggle: By Friend / By Group */}
+      {showViewToggle && (
+        <View style={[styles.viewToggle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.viewBtn, view === 'friend' && { backgroundColor: colors.primary }]}
+            onPress={() => setView('friend')}
+          >
+            <Text style={[styles.viewBtnText, { color: view === 'friend' ? '#fff' : colors.textSecondary }]}>👤 {t.viewByFriend}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.viewBtn, view === 'group' && { backgroundColor: colors.primary }]}
+            onPress={() => setView('group')}
+          >
+            <Text style={[styles.viewBtnText, { color: view === 'group' ? '#fff' : colors.textSecondary }]}>👥 {t.viewByGroup}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+
+        {/* I OWE */}
         {tab === 'iOwe' && (
           <>
             {iOwe.length === 0 && !loading && <EmptyState emoji="🎉" title={t.youOweNothing} subtitle={t.youOweNothingSubtitle} />}
-            {groupBy(iOwe, (i) => i.creditorId).map(({ uid, items: groupItems, total }) => (
+
+            {view === 'friend' && groupByFriend(iOwe, (i) => i.creditorId).map(({ uid, items: groupItems, total }) => (
               <View key={uid} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.cardHeader, { borderColor: colors.border, backgroundColor: colors.background }]}>
                   <Avatar avatarId={profiles.get(uid)?.avatarId} size={36} />
@@ -112,12 +164,30 @@ export function DebtsScreen() {
                 {groupItems.map((item) => renderItemRow(item, () => confirmMarkPaid(item)))}
               </View>
             ))}
+
+            {view === 'group' && groupByGroup(iOwe).map(({ group, items: groupItems, total }) => (
+              <View key={group.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.cardHeader, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <View style={[styles.groupIcon, { backgroundColor: group.color }]}>
+                    <Text style={styles.groupEmoji}>{group.emoji}</Text>
+                  </View>
+                  <View style={styles.cardHeaderBody}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{group.name}</Text>
+                    <Text style={[styles.cardTotal, { color: colors.textSecondary }]}>{formatK(total)} · {t.items(groupItems.length)}</Text>
+                  </View>
+                </View>
+                {groupItems.map((item) => renderItemRow(item, () => confirmMarkPaid(item), true))}
+              </View>
+            ))}
           </>
         )}
+
+        {/* OWED TO ME */}
         {tab === 'owedToMe' && (
           <>
             {owedToMe.length === 0 && !loading && <EmptyState emoji="😌" title={t.nobodyOwesYou} subtitle={t.nobodyOwesYouSubtitle} />}
-            {groupBy(owedToMe, (i) => i.debtorId).map(({ uid, items: groupItems, total }) => (
+
+            {view === 'friend' && groupByFriend(owedToMe, (i) => i.debtorId).map(({ uid, items: groupItems, total }) => (
               <View key={uid} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <View style={[styles.cardHeader, { borderColor: colors.border, backgroundColor: colors.background }]}>
                   <Avatar avatarId={profiles.get(uid)?.avatarId} size={36} />
@@ -129,8 +199,25 @@ export function DebtsScreen() {
                 {groupItems.map((item) => renderItemRow(item))}
               </View>
             ))}
+
+            {view === 'group' && groupByGroup(owedToMe).map(({ group, items: groupItems, total }) => (
+              <View key={group.id} style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.cardHeader, { borderColor: colors.border, backgroundColor: colors.background }]}>
+                  <View style={[styles.groupIcon, { backgroundColor: group.color }]}>
+                    <Text style={styles.groupEmoji}>{group.emoji}</Text>
+                  </View>
+                  <View style={styles.cardHeaderBody}>
+                    <Text style={[styles.cardTitle, { color: colors.text }]}>{group.name}</Text>
+                    <Text style={[styles.cardTotal, { color: colors.textSecondary }]}>{formatK(total)} · {t.items(groupItems.length)}</Text>
+                  </View>
+                </View>
+                {groupItems.map((item) => renderItemRow(item, undefined, true))}
+              </View>
+            ))}
           </>
         )}
+
+        {/* HISTORY */}
         {tab === 'history' && (
           <>
             {history.length === 0 && !loading && <EmptyState emoji="🗂" title={t.noPayments} subtitle={t.noPaymentsSubtitle} />}
@@ -147,6 +234,7 @@ export function DebtsScreen() {
             ))}
           </>
         )}
+
       </ScrollView>
     </View>
   );
@@ -158,6 +246,9 @@ const styles = StyleSheet.create({
   tab: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
   tabActive: {},
   tabText: { fontSize: 14, fontWeight: '600' },
+  viewToggle: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, borderRadius: 10, borderWidth: 1, overflow: 'hidden' },
+  viewBtn: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 9 },
+  viewBtnText: { fontSize: 13, fontWeight: '700' },
   scroll: { flex: 1 },
   content: { padding: 16, paddingTop: 8, paddingBottom: 40 },
   card: { borderRadius: 14, borderWidth: 1, marginBottom: 14, overflow: 'hidden' },
@@ -167,8 +258,12 @@ const styles = StyleSheet.create({
   cardTotal: { fontSize: 13, marginTop: 1 },
   markAllBtn: { borderRadius: 8, paddingVertical: 7, paddingHorizontal: 12 },
   markAllText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  groupIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  groupEmoji: { fontSize: 20 },
   itemRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, gap: 8, borderTopWidth: StyleSheet.hairlineWidth },
   itemBody: { flex: 1 },
+  itemFriendRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 },
+  itemFriend: { fontSize: 12, fontWeight: '600' },
   itemTitle: { fontSize: 14, fontWeight: '600' },
   itemMeta: { fontSize: 12, marginTop: 1 },
   itemAmount: { fontSize: 15, fontWeight: '700' },

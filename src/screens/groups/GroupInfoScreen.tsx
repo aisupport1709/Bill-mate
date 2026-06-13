@@ -50,6 +50,14 @@ export function GroupInfoScreen({ route, navigation }: Props) {
     }
   }), [groupId]);
 
+  useEffect(() => {
+    if (!group) return;
+    const adminIds: string[] = group.adminIds ?? [group.createdBy];
+    navigation.setOptions({
+      title: adminIds.includes(profile.uid) ? t.manageGroup : t.invitePlus,
+    });
+  }, [group, navigation, profile.uid, t]);
+
   if (!group) return <View style={[styles.container, { backgroundColor: colors.background }]} />;
 
   const adminIds: string[] = group.adminIds ?? [group.createdBy];

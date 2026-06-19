@@ -101,6 +101,10 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <Text style={[styles.versionText, { color: colors.textSecondary }]}>
+        v{APP_VERSION} · {RELEASE_DATE}
+      </Text>
+
       <View style={styles.header}>
         <Avatar avatarId={avatarId} size={72} />
         <Text style={[styles.name, { color: colors.text }]}>{profile.nickname}</Text>
@@ -139,9 +143,6 @@ export function ProfileScreen() {
         </>
       )}
 
-      <Text style={[styles.versionText, { color: colors.textSecondary }]}>
-        v{APP_VERSION} · {RELEASE_DATE}
-      </Text>
     </ScrollView>
   );
 }
@@ -160,5 +161,5 @@ const styles = StyleSheet.create({
   optionRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   optionBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1.5 },
   optionText: { fontSize: 14, fontWeight: '600' },
-  versionText: { fontSize: 12, textAlign: 'center', marginTop: 32, opacity: 0.5 },
+  versionText: { fontSize: 11, textAlign: 'center', marginBottom: 8, opacity: 0.4 },
 });

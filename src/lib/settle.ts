@@ -4,32 +4,33 @@ export interface Transfer {
   amountK: number;
 }
 
-// Min-cash-flow: repeatedly settle the largest debtor against the largest
-// creditor, producing at most (n - 1) transfers to clear all balances.
+// Min-cash-flow: repeatedly match the biggest debtor against the biggest
+// creditor. Re-sorts on every iteration so partial settlements are handled
+// correctly and floating-point drift doesn't cause infinite loops.
 export function minCashFlow(net: Record<string, number>): Transfer[] {
-  const creditors: { uid: string; amount: number }[] = [];
-  const debtors: { uid: string; amount: number }[] = [];
-
-  for (const [uid, balance] of Object.entries(net)) {
-    if (balance > 0) creditors.push({ uid, amount: balance });
-    else if (balance < 0) debtors.push({ uid, amount: -balance });
-  }
+  // Work with mutable copies, skip zero balances
+  const balances: { uid: string; amount: number }[] = Object.entries(net)
+    .filter(([, v]) => Math.abs(v) >= 1)
+    .map(([uid, amount]) => ({ uid, amount }));
 
   const transfers: Transfer[] = [];
-  creditors.sort((a, b) => b.amount - a.amount);
-  debtors.sort((a, b) => b.amount - a.amount);
 
-  let ci = 0;
-  let di = 0;
-  while (ci < creditors.length && di < debtors.length) {
-    const pay = Math.min(creditors[ci].amount, debtors[di].amount);
-    if (pay > 0) {
-      transfers.push({ from: debtors[di].uid, to: creditors[ci].uid, amountK: pay });
-    }
-    creditors[ci].amount -= pay;
-    debtors[di].amount -= pay;
-    if (creditors[ci].amount === 0) ci++;
-    if (debtors[di].amount === 0) di++;
+  for (let iter = 0; iter < balances.length * 2; iter++) {
+    balances.sort((a, b) => b.amount - a.amount);
+
+    const creditor = balances[0];
+    const debtor = balances[balances.length - 1];
+
+    if (!creditor || !debtor || creditor.amount < 1 || debtor.amount > -1) break;
+
+    const pay = Math.min(creditor.amount, -debtor.amount);
+    if (pay < 1) break;
+
+    transfers.push({ from: debtor.uid, to: creditor.uid, amountK: Math.round(pay) });
+
+    creditor.amount -= pay;
+    debtor.amount += pay;
   }
+
   return transfers;
 }

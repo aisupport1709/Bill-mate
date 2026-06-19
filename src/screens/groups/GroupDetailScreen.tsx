@@ -2,7 +2,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { listenGroup } from '../../api/groups';
-import { deleteRecord, listenRecords } from '../../api/records';
+import { deleteRecord, listenRecords, markSharePaid } from '../../api/records';
+import { notifyUsers } from '../../lib/push';
 import { Avatar } from '../../components/Avatar';
 import { EmptyState } from '../../components/EmptyState';
 import { useProfile } from '../../context/AuthContext';
@@ -71,13 +72,37 @@ export function GroupDetailScreen({ route, navigation }: Props) {
     );
   };
 
+  const doMarkPaid = async (item: ExpenseRecord, debtorUid: string, amountK: number) => {
+    await markSharePaid(groupId, item.id, profile, debtorUid, amountK);
+    notifyUsers([item.payerId], group?.name ?? 'Bill Mate',
+      `${profile.nickname} marked ${formatK(amountK)} as paid`);
+  };
+
+  const confirmMarkPaid = (item: ExpenseRecord, debtorUid: string, amountK: number, debtorName: string) => {
+    showAlert(t.markAsPaid, t.markAsPaidMsg(formatK(amountK), displayName(profiles, item.payerId, profile.uid)), [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.iPaidThis, onPress: () => doMarkPaid(item, debtorUid, amountK) },
+    ]);
+  };
+
+  const confirmMarkAllPaid = (item: ExpenseRecord) => {
+    const unpaid = Object.entries(item.shares).filter(([, s]) => !s.paid);
+    const total = unpaid.reduce((sum, [, s]) => sum + s.amountK, 0);
+    showAlert(t.markAllPaid, t.markAllPaidMsg(formatK(total), displayName(profiles, item.payerId, profile.uid), unpaid.length), [
+      { text: t.cancel, style: 'cancel' },
+      { text: t.iPaidAll, onPress: async () => {
+        for (const [uid, share] of unpaid) await markSharePaid(groupId, item.id, profile, uid, share.amountK);
+        notifyUsers([item.payerId], group?.name ?? 'Bill Mate',
+          `${profile.nickname} marked all (${formatK(total)}) as paid`);
+      }},
+    ]);
+  };
+
   const renderRecord = (item: ExpenseRecord) => {
     const myShare = item.shares[profile.uid];
     const unpaidCount = Object.values(item.shares).filter((s) => !s.paid).length;
     const isExpanded = expandedId === item.id;
 
-    // Build participant rows: payer first, then debtors
-    const payerIsPaid = !item.shares[item.payerId]; // payer not in shares means they don't owe themselves
     const debtorEntries = Object.entries(item.shares) as [string, { amountK: number; paid: boolean; paidAt: number | null }][];
 
     return (
@@ -127,26 +152,46 @@ export function GroupDetailScreen({ route, navigation }: Props) {
             <View style={[styles.detailDivider, { backgroundColor: colors.border }]} />
 
             {/* Each debtor */}
-            {debtorEntries.map(([uid, share]) => (
-              <View key={uid} style={styles.detailRow}>
-                <Avatar avatarId={profiles.get(uid)?.avatarId} size={26} />
-                <Text style={[styles.detailName, { color: colors.text }]}>
-                  {displayName(profiles, uid, profile.uid)}
-                </Text>
-                {share.paid ? (
-                  <View style={[styles.detailBadge, { backgroundColor: colors.success + '22' }]}>
-                    <Text style={[styles.detailBadgeText, { color: colors.success }]}>✓ {t.settled}</Text>
-                  </View>
-                ) : (
-                  <View style={[styles.detailBadge, { backgroundColor: colors.warning + '22' }]}>
-                    <Text style={[styles.detailBadgeText, { color: colors.warning }]}>{t.unpaid}</Text>
-                  </View>
-                )}
-                <Text style={[styles.detailAmount, { color: share.paid ? colors.textSecondary : colors.text }]}>
-                  {formatK(share.amountK)}
-                </Text>
-              </View>
-            ))}
+            {debtorEntries.map(([uid, share]) => {
+              const canMarkPaid = !share.paid && (uid === profile.uid || isAdmin);
+              return (
+                <View key={uid} style={styles.detailRow}>
+                  <Avatar avatarId={profiles.get(uid)?.avatarId} size={26} />
+                  <Text style={[styles.detailName, { color: colors.text }]}>
+                    {displayName(profiles, uid, profile.uid)}
+                  </Text>
+                  <Text style={[styles.detailAmount, { color: share.paid ? colors.textSecondary : colors.text }]}>
+                    {formatK(share.amountK)}
+                  </Text>
+                  {share.paid ? (
+                    <View style={[styles.detailBadge, { backgroundColor: colors.success + '22' }]}>
+                      <Text style={[styles.detailBadgeText, { color: colors.success }]}>✓ {t.settled}</Text>
+                    </View>
+                  ) : canMarkPaid ? (
+                    <TouchableOpacity
+                      style={[styles.payBtn, { borderColor: colors.success }]}
+                      onPress={() => confirmMarkPaid(item, uid, share.amountK, displayName(profiles, uid, profile.uid))}
+                    >
+                      <Text style={[styles.payBtnText, { color: colors.success }]}>{t.iPaidThis}</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={[styles.detailBadge, { backgroundColor: colors.warning + '22' }]}>
+                      <Text style={[styles.detailBadgeText, { color: colors.warning }]}>{t.unpaid}</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            {/* Mark all paid — admin only, when there are unpaid shares */}
+            {isAdmin && unpaidCount > 0 && (
+              <TouchableOpacity
+                style={[styles.markAllBtn, { backgroundColor: colors.success }]}
+                onPress={() => confirmMarkAllPaid(item)}
+              >
+                <Text style={styles.markAllBtnText}>{t.payAll} ({unpaidCount})</Text>
+              </TouchableOpacity>
+            )}
 
             {/* Edit / Delete actions */}
             <View style={[styles.detailActions, { borderTopColor: colors.border }]}>
@@ -245,6 +290,10 @@ const styles = StyleSheet.create({
   detailBadgeText: { fontSize: 11, fontWeight: '700' },
   detailAmount: { fontSize: 13, fontWeight: '700', minWidth: 48, textAlign: 'right' },
   detailDivider: { height: 1, marginVertical: 2 },
+  payBtn: { borderWidth: 1.5, borderRadius: 8, paddingVertical: 4, paddingHorizontal: 8 },
+  payBtnText: { fontSize: 12, fontWeight: '700' },
+  markAllBtn: { borderRadius: 8, paddingVertical: 8, alignItems: 'center', marginTop: 4 },
+  markAllBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
   detailActions: { flexDirection: 'row', borderTopWidth: 1, paddingTop: 10, marginTop: 4, gap: 16 },
   detailAction: { flex: 1, alignItems: 'center', paddingVertical: 4 },
   detailActionText: { fontSize: 13, fontWeight: '700' },

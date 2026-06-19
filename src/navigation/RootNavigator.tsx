@@ -14,6 +14,7 @@ import { CreateGroupScreen } from '../screens/groups/CreateGroupScreen';
 import { GroupDetailScreen } from '../screens/groups/GroupDetailScreen';
 import { GroupInfoScreen } from '../screens/groups/GroupInfoScreen';
 import { GroupsScreen } from '../screens/groups/GroupsScreen';
+import { MemberDetailScreen } from '../screens/groups/MemberDetailScreen';
 import { JoinGroupScreen } from '../screens/groups/JoinGroupScreen';
 import { RecordFormScreen } from '../screens/groups/RecordFormScreen';
 import { SettleUpScreen } from '../screens/groups/SettleUpScreen';
@@ -37,6 +38,7 @@ const linking: LinkingOptions<any> = {
           JoinGroup: 'join-group',
           GroupDetail: 'group/:groupId',
           GroupInfo: 'group/:groupId/info',
+          MemberDetail: 'group/:groupId/member/:uid',
           RecordForm: 'group/:groupId/record',
           Activity: 'group/:groupId/activity',
           SettleUp: 'group/:groupId/settle',
@@ -87,6 +89,7 @@ function GroupsNavigator() {
       <GroupsStack.Screen name="JoinGroup" component={JoinGroupScreen} options={{ title: '' }} />
       <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
       <GroupsStack.Screen name="GroupInfo" component={GroupInfoScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="MemberDetail" component={MemberDetailScreen} options={{ title: '' }} />
       <GroupsStack.Screen name="RecordForm" component={RecordFormScreen} options={{ title: '' }} />
       <GroupsStack.Screen name="Activity" component={ActivityScreen} options={{ title: '' }} />
       <GroupsStack.Screen name="SettleUp" component={SettleUpScreen} options={{ title: '' }} />

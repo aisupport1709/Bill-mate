@@ -151,6 +151,9 @@ const strings = {
       `Xác nhận bạn đã chuyển ${amount} cho ${name} (${count} mục).`,
     iPaidAll: 'Tôi đã trả hết',
     paid2: (debtor: string, creditor: string) => `${debtor} đã trả ${creditor}`,
+    // Member detail
+    memberDetail: 'Thành viên',
+    alreadyFriends: 'Đã là bạn bè ✓',
     // Friends
     addFriend: 'Thêm bạn',
     noFriendsTitle: 'Chưa có bạn bè',
@@ -346,6 +349,9 @@ const strings = {
       `Confirm you transferred ${amount} to ${name} (${count} items).`,
     iPaidAll: 'I paid all',
     paid2: (debtor: string, creditor: string) => `${debtor} paid ${creditor}`,
+    // Member detail
+    memberDetail: 'Member',
+    alreadyFriends: 'Already friends ✓',
     // Friends
     addFriend: 'Add friend',
     noFriendsTitle: 'No friends yet',

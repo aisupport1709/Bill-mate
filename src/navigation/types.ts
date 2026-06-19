@@ -11,6 +11,7 @@ export type GroupsStackParamList = {
   JoinGroup: undefined;
   GroupDetail: { groupId: string };
   GroupInfo: { groupId: string };
+  MemberDetail: { uid: string; groupId: string; isOwner: boolean; isAdmin: boolean };
   RecordForm: { groupId: string; record?: ExpenseRecord };
   Activity: { groupId: string };
   SettleUp: { groupId: string };

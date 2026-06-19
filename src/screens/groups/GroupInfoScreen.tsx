@@ -238,7 +238,12 @@ export function GroupInfoScreen({ route, navigation }: Props) {
           const isMemberAdmin = adminIds.includes(uid);
           const isLast = idx === group.memberIds.length - 1;
           return (
-            <View key={uid} style={[styles.memberRow, { borderColor: colors.border, borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth }]}>
+            <TouchableOpacity
+              key={uid}
+              activeOpacity={0.7}
+              style={[styles.memberRow, { borderColor: colors.border, borderBottomWidth: isLast ? 0 : StyleSheet.hairlineWidth }]}
+              onPress={() => navigation.navigate('MemberDetail', { uid, groupId: group.id, isOwner: isCreator, isAdmin: isMemberAdmin })}
+            >
               <Avatar avatarId={m?.avatarId} size={36} />
               <View style={styles.memberBody}>
                 <View style={styles.memberNameRow}>
@@ -259,7 +264,7 @@ export function GroupInfoScreen({ route, navigation }: Props) {
                   </TouchableOpacity>
                 </View>
               )}
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>

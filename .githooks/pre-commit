@@ -31,6 +31,15 @@ app.expo.version = '$NEW_VERSION';
 fs.writeFileSync('$APP_JSON', JSON.stringify(app, null, 2) + '\n');
 "
 
-git add "$VERSION_FILE" "$APP_JSON"
+VERSION_TS="src/lib/version.ts"
+RELEASE_DATE=$(date +%Y-%m-%d)
+
+node -e "
+const fs = require('fs');
+const content = \`export const APP_VERSION = '$NEW_VERSION';\nexport const RELEASE_DATE = '$RELEASE_DATE';\n\`;
+fs.writeFileSync('$VERSION_TS', content);
+"
+
+git add "$VERSION_FILE" "$APP_JSON" "$VERSION_TS"
 
 echo "Version bumped to $NEW_VERSION"

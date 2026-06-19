@@ -14,6 +14,7 @@ import { normalizePhone } from '../../lib/phone';
 import { Language } from '../../lib/i18n';
 import { ThemeMode } from '../../lib/theme';
 import { ProfileStackParamList } from '../../navigation/types';
+import { APP_VERSION, RELEASE_DATE } from '../../lib/version';
 
 type Nav = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -137,6 +138,10 @@ export function ProfileScreen() {
           <Button title={t.adminResetBtn} variant="secondary" onPress={onResetPassword} loading={resetting} disabled={!resetPhone.trim()} style={styles.gap} />
         </>
       )}
+
+      <Text style={[styles.versionText, { color: colors.textSecondary }]}>
+        v{APP_VERSION} · {RELEASE_DATE}
+      </Text>
     </ScrollView>
   );
 }
@@ -155,4 +160,5 @@ const styles = StyleSheet.create({
   optionRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   optionBtn: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 10, borderWidth: 1.5 },
   optionText: { fontSize: 14, fontWeight: '600' },
+  versionText: { fontSize: 12, textAlign: 'center', marginTop: 32, opacity: 0.5 },
 });

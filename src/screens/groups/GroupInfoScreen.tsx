@@ -17,10 +17,10 @@ import { displayGroupCode } from '../../lib/groupCode';
 import { isValidPhone } from '../../lib/phone';
 import { notifyUsers } from '../../lib/push';
 import { GROUP_COLORS, GROUP_EMOJIS } from '../../lib/theme';
-import { RootStackParamList } from '../../navigation/types';
+import { GroupsStackParamList } from '../../navigation/types';
 import { Group, UserProfile } from '../../types/models';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'GroupInfo'>;
+type Props = NativeStackScreenProps<GroupsStackParamList, 'GroupInfo'>;
 
 export function GroupInfoScreen({ route, navigation }: Props) {
   const { groupId } = route.params;

@@ -19,32 +19,37 @@ import { RecordFormScreen } from '../screens/groups/RecordFormScreen';
 import { SettleUpScreen } from '../screens/groups/SettleUpScreen';
 import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
-import { AuthStackParamList, RootStackParamList, TabParamList } from './types';
+import { AuthStackParamList, GroupsStackParamList, ProfileStackParamList, TabParamList } from './types';
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
-const RootStack = createNativeStackNavigator<RootStackParamList>();
+const GroupsStack = createNativeStackNavigator<GroupsStackParamList>();
+const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const linking: LinkingOptions<RootStackParamList> = {
+const linking: LinkingOptions<any> = {
   prefixes: [],
   config: {
     screens: {
-      Tabs: {
+      Groups: {
         screens: {
-          Groups: 'groups',
-          Debts: 'debts',
-          Friends: 'friends',
-          Profile: 'profile',
+          GroupsList: 'groups',
+          CreateGroup: 'create-group',
+          JoinGroup: 'join-group',
+          GroupDetail: 'group/:groupId',
+          GroupInfo: 'group/:groupId/info',
+          RecordForm: 'group/:groupId/record',
+          Activity: 'group/:groupId/activity',
+          SettleUp: 'group/:groupId/settle',
         },
       },
-      CreateGroup: 'create-group',
-      JoinGroup: 'join-group',
-      GroupDetail: 'group/:groupId',
-      GroupInfo: 'group/:groupId/info',
-      RecordForm: 'group/:groupId/record',
-      Activity: 'group/:groupId/activity',
-      SettleUp: 'group/:groupId/settle',
-      ChangePassword: 'change-password',
+      Debts: 'debts',
+      Friends: 'friends',
+      Profile: {
+        screens: {
+          ProfileMain: 'profile',
+          ChangePassword: 'change-password',
+        },
+      },
     },
   },
 };
@@ -62,25 +67,75 @@ function WebBackButton({ onPress, color }: { onPress: () => void; color: string 
   );
 }
 
+function GroupsNavigator() {
+  const colors = useColors();
+  const primaryColor = colors.primary;
+  const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
+    headerBackButtonDisplayMode: 'minimal' as const,
+    headerTitleStyle: { fontWeight: '700' as const, color: colors.text },
+    headerStyle: { backgroundColor: colors.card },
+    headerShadowVisible: false,
+    headerTintColor: primaryColor,
+    ...(Platform.OS === 'web' && navigation.canGoBack() ? {
+      headerLeft: () => <WebBackButton onPress={() => navigation.goBack()} color={primaryColor} />,
+    } : {}),
+  });
+  return (
+    <GroupsStack.Navigator screenOptions={stackScreenOptions}>
+      <GroupsStack.Screen name="GroupsList" component={GroupsScreen} options={{ title: 'Bill Mate', headerTitleStyle: { fontWeight: '800', color: colors.text } }} />
+      <GroupsStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="JoinGroup" component={JoinGroupScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="GroupInfo" component={GroupInfoScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="RecordForm" component={RecordFormScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="Activity" component={ActivityScreen} options={{ title: '' }} />
+      <GroupsStack.Screen name="SettleUp" component={SettleUpScreen} options={{ title: '' }} />
+    </GroupsStack.Navigator>
+  );
+}
+
+function ProfileNavigator() {
+  const colors = useColors();
+  const primaryColor = colors.primary;
+  const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
+    headerBackButtonDisplayMode: 'minimal' as const,
+    headerTitleStyle: { fontWeight: '700' as const, color: colors.text },
+    headerStyle: { backgroundColor: colors.card },
+    headerShadowVisible: false,
+    headerTintColor: primaryColor,
+    ...(Platform.OS === 'web' && navigation.canGoBack() ? {
+      headerLeft: () => <WebBackButton onPress={() => navigation.goBack()} color={primaryColor} />,
+    } : {}),
+  });
+  return (
+    <ProfileStack.Navigator screenOptions={stackScreenOptions}>
+      <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} options={{ title: 'Profile' }} />
+      <ProfileStack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: '' }} />
+    </ProfileStack.Navigator>
+  );
+}
 
 function Tabs() {
   const colors = useColors();
   const t = useT();
+  const sharedHeaderStyle = {
+    headerTitleStyle: { fontWeight: '800' as const, color: colors.text },
+    headerStyle: { backgroundColor: colors.card },
+    headerShadowVisible: false,
+  };
   return (
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: { backgroundColor: colors.tabBar, borderTopColor: colors.tabBarBorder },
-        headerTitleStyle: { fontWeight: '800', color: colors.text },
-        headerStyle: { backgroundColor: colors.card },
-        headerShadowVisible: false,
+        headerShown: false,
       }}
     >
-      <Tab.Screen name="Groups" component={GroupsScreen} options={{ title: 'Bill Mate', tabBarLabel: t.tabGroups, tabBarIcon: (p) => <TabIcon emoji="👥" focused={p.focused} /> }} />
-      <Tab.Screen name="Debts" component={DebtsScreen} options={{ tabBarLabel: t.tabDebts, tabBarIcon: (p) => <TabIcon emoji="💸" focused={p.focused} /> }} />
-      <Tab.Screen name="Friends" component={FriendsScreen} options={{ tabBarLabel: t.tabFriends, tabBarIcon: (p) => <TabIcon emoji="🤝" focused={p.focused} /> }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: t.tabProfile, tabBarIcon: (p) => <TabIcon emoji="👤" focused={p.focused} /> }} />
+      <Tab.Screen name="Groups" component={GroupsNavigator} options={{ tabBarLabel: t.tabGroups, tabBarIcon: (p) => <TabIcon emoji="👥" focused={p.focused} /> }} />
+      <Tab.Screen name="Debts" component={DebtsScreen} options={{ headerShown: true, tabBarLabel: t.tabDebts, tabBarIcon: (p) => <TabIcon emoji="💸" focused={p.focused} />, ...sharedHeaderStyle }} />
+      <Tab.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, tabBarLabel: t.tabFriends, tabBarIcon: (p) => <TabIcon emoji="🤝" focused={p.focused} />, ...sharedHeaderStyle }} />
+      <Tab.Screen name="Profile" component={ProfileNavigator} options={{ tabBarLabel: t.tabProfile, tabBarIcon: (p) => <TabIcon emoji="👤" focused={p.focused} /> }} />
     </Tab.Navigator>
   );
 }
@@ -102,18 +157,6 @@ export function RootNavigator() {
     );
   }
 
-  const primaryColor = colors.primary;
-  const stackScreenOptions = ({ navigation }: { navigation: any }) => ({
-    headerBackButtonDisplayMode: 'minimal' as const,
-    headerTitleStyle: { fontWeight: '700' as const, color: colors.text },
-    headerStyle: { backgroundColor: colors.card },
-    headerShadowVisible: false,
-    headerTintColor: primaryColor,
-    ...(Platform.OS === 'web' && navigation.canGoBack() ? {
-      headerLeft: () => <WebBackButton onPress={() => navigation.goBack()} color={primaryColor} />,
-    } : {}),
-  });
-
   return (
     <NavigationContainer linking={linking} theme={navTheme}>
       {!user || !profile ? (
@@ -122,17 +165,7 @@ export function RootNavigator() {
           <AuthStack.Screen name="SignUp" component={SignUpScreen} />
         </AuthStack.Navigator>
       ) : (
-        <RootStack.Navigator screenOptions={stackScreenOptions}>
-          <RootStack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
-          <RootStack.Screen name="CreateGroup" component={CreateGroupScreen} options={{ title: '' }} />
-          <RootStack.Screen name="JoinGroup" component={JoinGroupScreen} options={{ title: '' }} />
-          <RootStack.Screen name="GroupDetail" component={GroupDetailScreen} options={{ title: '' }} />
-          <RootStack.Screen name="GroupInfo" component={GroupInfoScreen} options={{ title: '' }} />
-          <RootStack.Screen name="RecordForm" component={RecordFormScreen} options={{ title: '' }} />
-          <RootStack.Screen name="Activity" component={ActivityScreen} options={{ title: '' }} />
-          <RootStack.Screen name="SettleUp" component={SettleUpScreen} options={{ title: '' }} />
-          <RootStack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: '' }} />
-        </RootStack.Navigator>
+        <Tabs />
       )}
     </NavigationContainer>
   );

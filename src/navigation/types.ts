@@ -5,6 +5,22 @@ export type AuthStackParamList = {
   SignUp: undefined;
 };
 
+export type GroupsStackParamList = {
+  GroupsList: undefined;
+  CreateGroup: undefined;
+  JoinGroup: undefined;
+  GroupDetail: { groupId: string };
+  GroupInfo: { groupId: string };
+  RecordForm: { groupId: string; record?: ExpenseRecord };
+  Activity: { groupId: string };
+  SettleUp: { groupId: string };
+};
+
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  ChangePassword: undefined;
+};
+
 export type RootStackParamList = {
   Tabs: undefined;
   CreateGroup: undefined;

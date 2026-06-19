@@ -13,9 +13,9 @@ import { AVATARS } from '../../lib/avatars';
 import { normalizePhone } from '../../lib/phone';
 import { Language } from '../../lib/i18n';
 import { ThemeMode } from '../../lib/theme';
-import { RootStackParamList } from '../../navigation/types';
+import { ProfileStackParamList } from '../../navigation/types';
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<ProfileStackParamList>;
 
 const ADMIN_PHONE = '0904310992';
 

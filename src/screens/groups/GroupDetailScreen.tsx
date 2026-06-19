@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { listenGroup } from '../../api/groups';
 import { deleteRecord, listenRecords, markSharePaid } from '../../api/records';
 import { notifyUsers } from '../../lib/push';
@@ -11,10 +11,10 @@ import { useColors, useT } from '../../context/SettingsContext';
 import { showAlert } from '../../lib/alert';
 import { formatDate, formatK } from '../../lib/format';
 import { displayName, useProfiles } from '../../hooks/useProfiles';
-import { RootStackParamList } from '../../navigation/types';
+import { GroupsStackParamList } from '../../navigation/types';
 import { ExpenseRecord, Group } from '../../types/models';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'GroupDetail'>;
+type Props = NativeStackScreenProps<GroupsStackParamList, 'GroupDetail'>;
 
 export function GroupDetailScreen({ route, navigation }: Props) {
   const { groupId } = route.params;
@@ -262,7 +262,7 @@ export function GroupDetailScreen({ route, navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  inviteBtn: { borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1 },
+  inviteBtn: { borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12, borderWidth: 1, marginRight: Platform.OS === 'ios' ? 8 : 0 },
   inviteBtnText: { fontSize: 14, fontWeight: '700' },
   balanceStrip: { flexGrow: 0, borderBottomWidth: 1 },
   balanceContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 10 },

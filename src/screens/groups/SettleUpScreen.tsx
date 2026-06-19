@@ -10,10 +10,10 @@ import { useColors, useT } from '../../context/SettingsContext';
 import { displayName, useProfiles } from '../../hooks/useProfiles';
 import { formatK } from '../../lib/format';
 import { minCashFlow } from '../../lib/settle';
-import { RootStackParamList } from '../../navigation/types';
+import { GroupsStackParamList } from '../../navigation/types';
 import { ExpenseRecord, Group } from '../../types/models';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SettleUp'>;
+type Props = NativeStackScreenProps<GroupsStackParamList, 'SettleUp'>;
 
 export function SettleUpScreen({ route }: Props) {
   const { groupId } = route.params;

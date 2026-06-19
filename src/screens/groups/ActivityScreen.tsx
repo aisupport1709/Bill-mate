@@ -7,10 +7,10 @@ import { EmptyState } from '../../components/EmptyState';
 import { useColors, useT } from '../../context/SettingsContext';
 import { useProfiles } from '../../hooks/useProfiles';
 import { formatDateTime } from '../../lib/format';
-import { RootStackParamList } from '../../navigation/types';
+import { GroupsStackParamList } from '../../navigation/types';
 import { ActivityEntry } from '../../types/models';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Activity'>;
+type Props = NativeStackScreenProps<GroupsStackParamList, 'Activity'>;
 
 const ICONS: Record<string, string> = {
   group_created: '🎉', member_joined: '👋', member_left: '🚪',

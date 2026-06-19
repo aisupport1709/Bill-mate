@@ -8,10 +8,10 @@ import { EmptyState } from '../../components/EmptyState';
 import { useProfile } from '../../context/AuthContext';
 import { useColors, useT } from '../../context/SettingsContext';
 import { displayGroupCode } from '../../lib/groupCode';
-import { RootStackParamList } from '../../navigation/types';
+import { GroupsStackParamList } from '../../navigation/types';
 import { Group } from '../../types/models';
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = NativeStackNavigationProp<GroupsStackParamList>;
 
 export function GroupsScreen() {
   const navigation = useNavigation<Nav>();

@@ -13,10 +13,10 @@ import { showAlert } from '../../lib/alert';
 import { formatK, parseK, todayISO } from '../../lib/format';
 import { displayName, useProfiles } from '../../hooks/useProfiles';
 import { notifyUsers } from '../../lib/push';
-import { RootStackParamList } from '../../navigation/types';
+import { GroupsStackParamList } from '../../navigation/types';
 import { Group } from '../../types/models';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'RecordForm'>;
+type Props = NativeStackScreenProps<GroupsStackParamList, 'RecordForm'>;
 
 export function RecordFormScreen({ route, navigation }: Props) {
   const { groupId, record } = route.params;

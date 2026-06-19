@@ -6,9 +6,9 @@ import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { useColors, useT } from '../../context/SettingsContext';
 import { showAlert } from '../../lib/alert';
-import { RootStackParamList } from '../../navigation/types';
+import { ProfileStackParamList } from '../../navigation/types';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'ChangePassword'>;
+type Props = NativeStackScreenProps<ProfileStackParamList, 'ChangePassword'>;
 
 export function ChangePasswordScreen({ navigation }: Props) {
   const colors = useColors();

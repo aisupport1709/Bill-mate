@@ -177,3 +177,4 @@ const styles = StyleSheet.create({
   webBack: { paddingRight: 8, paddingVertical: 4 },
   webBackText: { fontSize: 17, fontWeight: '600' },
 });
+ 
